@@ -1,0 +1,1 @@
+simple go htmx with template
