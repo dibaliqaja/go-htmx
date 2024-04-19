@@ -1,13 +1,16 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"time"
 	"io"
 	"log"
 	"net/http"
+	"time"
+
+	_ "github.com/lib/pq"
 )
 
 type Film struct {
@@ -22,7 +25,121 @@ type Todo struct {
 	Completed 	bool	`json:"completed"`
 }
 
+type Product struct {
+	Name		string
+	Price		float64
+	Available	bool
+}
+
 func main() {
+	// routeHandler()
+	// connectDB()
+}
+
+func connectDB() {
+	connStr := "postgres://postgres:p@localhost:5432/gopgtest?sslmode=disable"
+
+	db, err := sql.Open("postgres", connStr)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	if err = db.Ping(); err != nil {
+		log.Fatal(err)
+	}
+	
+	defer db.Close()
+
+	// createProductTable(db)
+	// getProductWithInsert(db)
+	// getAllProduct(db)
+}
+
+func createProductTable(db *sql.DB) {
+	query := `CREATE TABLE IF NOT EXISTS product (
+		id SERIAL PRIMARY KEY,
+		name VARCHAR(100) NOT NULL,
+		price NUMERIC(6,2) NOT NULL,
+		available BOOLEAN,
+		created_at timestamp DEFAULT NOW()
+	)`
+
+	_, err := db.Query(query)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func insertProduct(db *sql.DB, product Product) int {
+	query := `INSERT INTO product (name, price, available) VALUES ($1, $2, $3) RETURNING id`
+
+	var primaryKey int
+
+	err := db.QueryRow(query, product.Name, product.Price, product.Available).Scan(&primaryKey)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return primaryKey
+}
+
+func getProductWithInsert(db *sql.DB) {
+	product := Product{"Book", 15.55, true}
+	primaryKey := insertProduct(db, product)
+
+	fmt.Printf("ID = %d\n", primaryKey)
+
+	var name string
+	var price float64
+	var available bool
+
+	query := "SELECT name, price, available FROM product WHERE id = $1"
+
+	err := db.QueryRow(query, primaryKey).Scan(&name, &price, &available)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Fatalf("No rows found with ID %d", 111)
+		}
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Name: %s\n", name)
+	fmt.Printf("Price: %f\n", price)
+	fmt.Printf("Available: %t\n", available)   // %t is prints true or false
+}
+
+func getAllProduct(db *sql.DB) {
+	data := []Product{}
+	rows, err := db.Query("SELECT name, price, available FROM product")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer rows.Close()
+
+	var name string
+	var price float64
+	var available bool
+
+	for rows.Next() {
+		err := rows.Scan(&name, &price, &available)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		data = append(data, Product{name, price, available})
+	}
+
+	fmt.Println(data)
+}
+
+func routeHandler() {	
 	fmt.Println("Listening serve on http://localhost:8000")
 
 	handlerHome := func (w http.ResponseWriter, r *http.Request) {
