@@ -1,0 +1,15 @@
+<tr>
+    <td class="text-center">{{ .Id }}</td>
+    <td>{{ .Name }}</td>
+    <td class="text-center">
+        {{ if .IsCompleted }} ✅
+        {{ else }} ❌
+        {{ end }}
+    </td>
+    <td class="text-center">
+        <form action="/delete-todo/" method="POST">
+            <input type="hidden" name="id" value="{{ .Id }}">
+            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+        </form>
+    </td>
+</tr>

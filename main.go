@@ -8,6 +8,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
+	"sync/atomic"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -31,9 +33,87 @@ type Product struct {
 	Available	bool
 }
 
+type Todois struct {
+	Id			int		`json:"id"`
+	Name		string	`json:"name"`
+	IsCompleted bool	`json:"isCompleted"`
+}
+
+var todos = []Todois{
+	{ Id: 1, Name: "Adding service list all products", IsCompleted: true },
+	{ Id: 2, Name: "Adding service create product", IsCompleted: false },
+	{ Id: 3, Name: "Adding service update product", IsCompleted: false },
+}
+
+var templates map[string]*template.Template
+var lastID int64 = 3
+
+func init() {
+	if templates == nil {
+		templates = make(map[string]*template.Template)
+	}
+
+	templates["todois.html"] = template.Must(template.ParseFiles("todois.html"))
+	templates["todois_list.html"] = template.Must(template.ParseFiles("todois_list.html"))
+}
+
+func todoisHandler(w http.ResponseWriter, r *http.Request) {
+	json, err := json.Marshal(todos)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := templates["todois.html"]
+	tmpl.ExecuteTemplate(w, "todois.html", map[string]template.JS{"Todois": template.JS(json)})
+}
+
+func createTodoisHandler(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+        http.Error(w, "Failed to parse form", http.StatusBadRequest)
+        return
+    }
+
+	name := r.PostFormValue("name")
+	completed := r.PostFormValue("completed") == "true"
+	newID := int(atomic.AddInt64(&lastID, 1))
+
+	todo := Todois{ Id: newID, Name: name, IsCompleted: completed }
+
+	todos = append(todos, todo)
+
+	tmpl := templates["todois_list.html"]
+	tmpl.ExecuteTemplate(w, "todois_list.html", todo)
+}
+
+func deleteTodoisHandler(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+        http.Error(w, "Failed to parse form", http.StatusBadRequest)
+        return
+    }
+
+	id, err := strconv.Atoi(r.PostFormValue("id"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for i, todo := range todos {
+		if todo.Id == id {
+			todos = append(todos[:i], todos[i+1:]...)
+			break
+		}
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
 func main() {
-	// routeHandler()
-	// connectDB()
+	http.HandleFunc("/", todoisHandler)
+	http.HandleFunc("/create-todo/", createTodoisHandler)
+	http.HandleFunc("/delete-todo/", deleteTodoisHandler)
+
+	fmt.Println("Server is running at http://localhost:8000")
+	log.Fatal(http.ListenAndServe(":8000", nil))
 }
 
 func connectDB() {
