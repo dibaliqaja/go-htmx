@@ -1,1 +1,1 @@
-simple go htmx with template
+golang htmx codebase playground
