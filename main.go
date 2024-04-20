@@ -16,33 +16,33 @@ import (
 )
 
 type Film struct {
-	Title 		string
-	Director 	string
+	Title    string
+	Director string
 }
 
 type Todo struct {
-	UserID		int		`json:"userId"`
-	ID			int		`json:"id"`
-	Title		string	`json:"title"`
-	Completed 	bool	`json:"completed"`
+	UserID    int    `json:"userId"`
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Completed bool   `json:"completed"`
 }
 
 type Product struct {
-	Name		string
-	Price		float64
-	Available	bool
+	Name      string
+	Price     float64
+	Available bool
 }
 
 type Todois struct {
-	Id			int		`json:"id"`
-	Name		string	`json:"name"`
-	IsCompleted bool	`json:"isCompleted"`
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	IsCompleted bool   `json:"isCompleted"`
 }
 
 var todos = []Todois{
-	{ Id: 1, Name: "Adding service list all products", IsCompleted: true },
-	{ Id: 2, Name: "Adding service create product", IsCompleted: false },
-	{ Id: 3, Name: "Adding service update product", IsCompleted: false },
+	{Id: 1, Name: "Adding service list all products", IsCompleted: true},
+	{Id: 2, Name: "Adding service create product", IsCompleted: false},
+	{Id: 3, Name: "Adding service update product", IsCompleted: false},
 }
 
 var templates map[string]*template.Template
@@ -70,15 +70,15 @@ func todoisHandler(w http.ResponseWriter, r *http.Request) {
 
 func createTodoisHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-        http.Error(w, "Failed to parse form", http.StatusBadRequest)
-        return
-    }
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
 
 	name := r.PostFormValue("name")
 	completed := r.PostFormValue("completed") == "true"
 	newID := int(atomic.AddInt64(&lastID, 1))
 
-	todo := Todois{ Id: newID, Name: name, IsCompleted: completed }
+	todo := Todois{Id: newID, Name: name, IsCompleted: completed}
 
 	todos = append(todos, todo)
 
@@ -88,9 +88,9 @@ func createTodoisHandler(w http.ResponseWriter, r *http.Request) {
 
 func deleteTodoisHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-        http.Error(w, "Failed to parse form", http.StatusBadRequest)
-        return
-    }
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
 
 	id, err := strconv.Atoi(r.PostFormValue("id"))
 	if err != nil {
@@ -124,11 +124,11 @@ func connectDB() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	if err = db.Ping(); err != nil {
 		log.Fatal(err)
 	}
-	
+
 	defer db.Close()
 
 	// createProductTable(db)
@@ -189,7 +189,7 @@ func getProductWithInsert(db *sql.DB) {
 
 	fmt.Printf("Name: %s\n", name)
 	fmt.Printf("Price: %f\n", price)
-	fmt.Printf("Available: %t\n", available)   // %t is prints true or false
+	fmt.Printf("Available: %t\n", available) // %t is prints true or false
 }
 
 func getAllProduct(db *sql.DB) {
@@ -219,27 +219,27 @@ func getAllProduct(db *sql.DB) {
 	fmt.Println(data)
 }
 
-func routeHandler() {	
+func routeHandler() {
 	fmt.Println("Listening serve on http://localhost:8000")
 
-	handlerHome := func (w http.ResponseWriter, r *http.Request) {
+	handlerHome := func(w http.ResponseWriter, r *http.Request) {
 		// io.WriteString(w, "Hello Go - HTMX\n")
 		// io.WriteString(w, r.Method)
 
 		tmpl := template.Must(template.ParseFiles("index.html"))
 
-		films := map[string][]Film {
+		films := map[string][]Film{
 			"Films": {
-				{ Title: "The Food", Director: "Aberama Hanyu" },
-				{ Title: "The Dasiid", Director: "asdad Hanyu" },
-				{ Title: "The Fhasi", Director: "klo Hanyu" },
+				{Title: "The Food", Director: "Aberama Hanyu"},
+				{Title: "The Dasiid", Director: "asdad Hanyu"},
+				{Title: "The Fhasi", Director: "klo Hanyu"},
 			},
 		}
 
 		tmpl.Execute(w, films)
 	}
 
-	handlerAddFilm := func (w http.ResponseWriter, r *http.Request) {
+	handlerAddFilm := func(w http.ResponseWriter, r *http.Request) {
 		// log.Print("HTMX request received")
 		// log.Print(r.Header.Get("HX-Request"))
 
@@ -256,10 +256,10 @@ func routeHandler() {
 		// tmpl.Execute(w, nil)
 
 		tmpl := template.Must(template.ParseFiles("index.html"))
-		tmpl.ExecuteTemplate(w, "film-list-element", Film{ Title: title, Director: director })
+		tmpl.ExecuteTemplate(w, "film-list-element", Film{Title: title, Director: director})
 	}
 
-	handlerJSON := func (w http.ResponseWriter, r *http.Request) {
+	handlerJSON := func(w http.ResponseWriter, r *http.Request) {
 		url := "https://jsonplaceholder.typicode.com/todos/1"
 
 		response, err := http.Get(url)
